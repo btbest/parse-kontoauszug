@@ -1,0 +1,7 @@
+name: comdirect-parse
+channels:
+  - conda-forge
+dependencies:
+  - python>3.0
+  - pandas
+  - pypdf
