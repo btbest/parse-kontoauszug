@@ -38,7 +38,7 @@ def parse_finanzreport(fp):
     unassignable_parts = []
     active_account = ""
     chunks_table = emptytable()
-    unique_header_xcoords = set()
+    header_xcoords = []
     end_signal_1_seen = False
     first_header = 0
     prev_col = 0.
@@ -48,7 +48,7 @@ def parse_finanzreport(fp):
     def interpret_chunk(operator, operandargs, __transformation_matrix, text_matrix):
         nonlocal active_account
         nonlocal chunks_table
-        nonlocal unique_header_xcoords
+        nonlocal header_xcoords
         nonlocal end_signal_1_seen
         nonlocal first_header
         nonlocal prev_col
@@ -69,8 +69,9 @@ def parse_finanzreport(fp):
             return
         if is_table_header(text):
             header_x = x if not is_last_table_header(text) else x - LAST_HEADER_LEEWAY
-            unique_header_xcoords.add(header_x)
-            header_xcoords = sorted(list(unique_header_xcoords))
+            if header_x not in header_xcoords:
+                header_xcoords.append(header_x)
+                header_xcoords = sorted(header_xcoords)
             if is_first_table_header(text):
                 first_header = x
                 cur_row_y = y
