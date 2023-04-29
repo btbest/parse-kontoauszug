@@ -19,9 +19,6 @@ REGEX_DATE = "\d{2}\.\d{2}\.\d{4}"
 def pdfdecode(byteslist):
     return byteslist.decode(ENCODING)
 
-def emptytable():
-    return DataFrame(dtype="string")
-
 def find_closest_header(text_x, header_xcoords):
     # E.g. if headers = [1,3,7], a text chunk with x=5 would be in the second column, or headers[1].
     # bisect_right gives us the _next_ header, which is the closest we can get in terms of convenience.
@@ -37,14 +34,14 @@ def parse_finanzreport(fp):
     out_of_account_parts = []
     unassignable_parts = []
     active_account = ""
-    chunks_table = emptytable()
+    chunks_table = DataFrame()
     header_xcoords = []
     end_signal_1_seen = False
     first_header = 0
     prev_col = 0.
     cur_row_y = 10000000. # y is inverted (bottom = 0, top of the page = some number around 1000)
     cur_row = 0
-    skip_row = True
+    row_does_not_start_with_date = True
     def interpret_chunk(operator, operandargs, __transformation_matrix, text_matrix):
         nonlocal active_account
         nonlocal chunks_table
@@ -54,19 +51,22 @@ def parse_finanzreport(fp):
         nonlocal prev_col
         nonlocal cur_row
         nonlocal cur_row_y
-        nonlocal skip_row
+        nonlocal row_does_not_start_with_date
         if operator != b'TJ':
             return
         text = pdfdecode(operandargs[0][0])
         font_size = text_matrix[0]
         x = text_matrix[4]
         y = text_matrix[5]
+        # Handle title
         if is_account_title(text, font_size):
             active_account = text
             return
+        # Skip until title was seen
         if not active_account:
             out_of_account_parts.append(text)
             return
+        # Handle table headers
         if is_table_header(text):
             header_x = x if not is_last_table_header(text) else x - LAST_HEADER_LEEWAY
             if header_x not in header_xcoords:
@@ -76,6 +76,15 @@ def parse_finanzreport(fp):
                 first_header = x
                 cur_row_y = y
             return
+        column = find_closest_header(x, header_xcoords)
+        # Skip if text is outside table, or no headers seen yet
+        # Also skip text chunks from higher up in the page than the current table row.
+        # The report format since June 2016 throws text chunks from the page header into the middle of the table for some reason.
+        # Remember that y is inverted. y=0 is the page bottom. 
+        if column is None or y > cur_row_y:
+            unassignable_parts.append(text)
+            return
+        # Handle end of Girokonto table
         if text == ACCOUNT_END_SIGNAL_1:
             end_signal_1_seen = True
             return
@@ -84,27 +93,36 @@ def parse_finanzreport(fp):
             return
         elif end_signal_1_seen:
             end_signal_1_seen = False
-        column = find_closest_header(x, header_xcoords)
-        if column is None or y > cur_row_y:
-            unassignable_parts.append(text)
-            return
+        # Handle start of table row
         if column == first_header:
-            if (cur_row_y - y) < LINE_BREAK_THRESHOLD:
+            # The first column contains the transaction date and the date the value was credited to the account.
+            # These two dates are practically always identical, so discard the second.
+            if is_regular_text_line_break(y):
+                # Print out in case dates are not identical (usually investment transactions, sometimes cash withdrawal)
+                if text != "Valuta" and text != chunks_table.loc[cur_row, column]:
+                    print(f"Info: Valuta eines Vorgangs am {text} =/= Buchungstag {chunks_table.loc[cur_row, column]}.")
                 return
-            if not re.match(REGEX_DATE, text):
-                skip_row = True
+            if not is_date(text):
+                row_does_not_start_with_date = True
                 return
             cur_row += 1
             cur_row_y = y
-            skip_row = False
-        if skip_row:
+            row_does_not_start_with_date = False
+        # Skip until we have a proper table row (eliminate page header, footer, and "Alter Saldo")
+        if row_does_not_start_with_date:
             unassignable_parts.append(text)
             return
         if column == prev_col:
             chunks_table.at[cur_row, column] = f"{chunks_table.loc[cur_row, column]} {text}"
         else:
-            chunks_table.at[cur_row, column] = str(text)
+            chunks_table.at[cur_row, column] = text
         prev_col = column
+
+    def is_date(text):
+        return re.match(REGEX_DATE, text)
+
+    def is_regular_text_line_break(y):
+        return (cur_row_y - y) < LINE_BREAK_THRESHOLD
 
     def is_account_title(text, font_size):
         return text == ACCOUNT_HEADER and font_size > TITLE_FONT_SIZE_THRESHOLD
