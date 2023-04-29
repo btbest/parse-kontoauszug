@@ -8,6 +8,7 @@ Das Skript erfordert eine funktionierende Installation von Python 3 mit den Modu
 # Ausführung
 * Falls die Finanzreport PDFs in demselben Ordner liegen wie das Skript, oder in einem Unterordner: `python parsecomdi.py`
 * Falls die Finanzreport PDFs anderswo liegen:  `python parsecomdi.py -p "C:\Pfad\zu\PDFs"`
+
 Optional kann man mit -o auch den Namen der Ausgabedatei steuern: `python parsecomdi.py -o "girokonto-2023.csv"`
 # Weitere Auswertung der Tabelle
 ## Mit Excel
