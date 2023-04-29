@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import re
 from bisect import bisect_right
 from os import getcwd
@@ -23,10 +23,15 @@ def emptytable():
     return DataFrame(dtype="string")
 
 def find_closest_header(text_x, header_xcoords):
-    next_index_after_text_x = bisect_right(header_xcoords, text_x)
-    if next_index_after_text_x == 0: # text_x is further left than the first column header
+    # E.g. if headers = [1,3,7], a text chunk with x=5 would be in the second column, or headers[1].
+    # bisect_right gives us the _next_ header, which is the closest we can get in terms of convenience.
+    # E.g. bisect_right([1,3,7], 5) == 2 and bisect_right([1,3,7], 3) == 2
+    # If the table was right-aligned instead, bisect_left would be the correct function to use.
+    index_of_next_larger_x = bisect_right(header_xcoords, text_x)
+    if index_of_next_larger_x == 0: # text_x is further left than the first column header
         return None
-    return next_index_after_text_x - 1
+    column_index = index_of_next_larger_x - 1
+    return header_xcoords[column_index]
 
 def parse_finanzreport(fp):
     out_of_account_parts = []
@@ -65,6 +70,7 @@ def parse_finanzreport(fp):
         if is_table_header(text):
             header_x = x if not is_last_table_header(text) else x - LAST_HEADER_LEEWAY
             unique_header_xcoords.add(header_x)
+            header_xcoords = sorted(list(unique_header_xcoords))
             if is_first_table_header(text):
                 first_header = x
                 cur_row_y = y
@@ -77,12 +83,10 @@ def parse_finanzreport(fp):
             return
         elif end_signal_1_seen:
             end_signal_1_seen = False
-        header_xcoords = sorted(list(unique_header_xcoords))
-        column_index = find_closest_header(x, header_xcoords)
-        if column_index is None or y > cur_row_y:
+        column = find_closest_header(x, header_xcoords)
+        if column is None or y > cur_row_y:
             unassignable_parts.append(text)
             return
-        column = header_xcoords[column_index]
         if column == first_header:
             if (cur_row_y - y) < LINE_BREAK_THRESHOLD:
                 return
