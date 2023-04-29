@@ -16,20 +16,6 @@ TITLE_FONT_SIZE_THRESHOLD = 9 # bigger than this = account title
 LINE_BREAK_THRESHOLD = 11 # smaller than this = line break (not table row break)
 REGEX_DATE = "\d{2}\.\d{2}\.\d{4}"
 
-def pdfdecode(byteslist):
-    return byteslist.decode(ENCODING)
-
-def find_closest_header(text_x, header_xcoords):
-    # E.g. if headers = [1,3,7], a text chunk with x=5 would be in the second column, or headers[1].
-    # bisect_right gives us the _next_ header, which is the closest we can get in terms of convenience.
-    # E.g. bisect_right([1,3,7], 5) == 2 and bisect_right([1,3,7], 3) == 2
-    # If the table was right-aligned instead, bisect_left would be the correct function to use.
-    index_of_next_larger_x = bisect_right(header_xcoords, text_x)
-    if index_of_next_larger_x == 0: # text_x is further left than the first column header
-        return None
-    column_index = index_of_next_larger_x - 1
-    return header_xcoords[column_index]
-
 def parse_finanzreport(fp):
     out_of_account_parts = []
     unassignable_parts = []
@@ -42,6 +28,7 @@ def parse_finanzreport(fp):
     cur_row_y = 10000000. # y is inverted (bottom = 0, top of the page = some number around 1000)
     cur_row = 0
     row_does_not_start_with_date = True
+
     def interpret_chunk(operator, operandargs, __transformation_matrix, text_matrix):
         nonlocal active_account
         nonlocal chunks_table
@@ -118,6 +105,20 @@ def parse_finanzreport(fp):
             chunks_table.at[cur_row, column] = text
         prev_col = column
 
+    def pdfdecode(byteslist):
+        return byteslist.decode(ENCODING)
+
+    def find_closest_header(text_x, header_xcoords):
+        # E.g. if headers = [1,3,7], a text chunk with x=5 would be in the second column, or headers[1].
+        # bisect_right gives us the _next_ header, which is the closest we can get in terms of convenience.
+        # E.g. bisect_right([1,3,7], 5) == 2 and bisect_right([1,3,7], 3) == 2
+        # If the table was right-aligned instead, bisect_left would be the correct function to use.
+        index_of_next_larger_x = bisect_right(header_xcoords, text_x)
+        if index_of_next_larger_x == 0: # text_x is further left than the first column header
+            return None
+        column_index = index_of_next_larger_x - 1
+        return header_xcoords[column_index]
+    
     def is_date(text):
         return re.match(REGEX_DATE, text)
 
