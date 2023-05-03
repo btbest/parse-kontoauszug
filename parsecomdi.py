@@ -15,7 +15,8 @@ LAST_HEADER_LEEWAY = 10 # Last column is right-aligned instead of left-aligned, 
 TITLE_FONT_SIZE_THRESHOLD = 9 # bigger than this = account title
 LINE_BREAK_THRESHOLD = 11 # smaller than this = line break (not table row break)
 REGEX_DATE = "\d{2}\.\d{2}\.\d{4}"
-REGEX_IBANBIC = "(?P<sender>.+?)(?P<ibanbic>[A-Z]{2}\d{2}[A-Z0-9]+ [A-Z]{6}[A-Z0-9]{5})" # https://stackoverflow.com/questions/21928083/iban-validation-check
+REGEX_IBANBIC = "(?P<sender>.+?) (?P<ibanbic>[A-Z]{2}\d{2}[A-Z0-9]+ [A-Z]{6}[A-Z0-9]{5})" # https://stackoverflow.com/questions/21928083/iban-validation-check
+REGEX_REFTEXT = "(?P<manualref>.+?) End-to-End-Ref\.:(?P<endref>.*)"
 
 def parse_finanzreport(fp):
     out_of_account_parts = []
@@ -170,7 +171,11 @@ def prettify_and_enrich_finanzreport(table, filename):
     iban = renamed["Auftraggeber"].str.extract(REGEX_IBANBIC)
     renamed["Auftraggeber-Name"] = iban["sender"].fillna(renamed["Auftraggeber"])
     renamed["Auftraggeber-IBAN/BIC"] = iban["ibanbic"]
-    
+
+    reftext = renamed["Buchungstext"].str.extract(REGEX_REFTEXT)
+    renamed["Buchungsnotiz"] = reftext["manualref"].fillna(renamed["Buchungstext"])
+    renamed["Buchungsreferenz"] = reftext["endref"]
+
     ## TODO implement "smart" features
     # renamed["Category"] = (figure out based on other columns - bills, groceries, rent...)
 
