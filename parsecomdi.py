@@ -144,6 +144,10 @@ def parse_finanzreport(fp):
     pagecount = 1
     for page in reader.pages:
         unassignable_parts.append(f"Page {pagecount}: ")
+        # The default behaviour of extract_text misinterprets spacer signals in Finanzreport PDFs.
+        # The resulting text lacks spaces and line breaks where it should have them.
+        # It is impossible to determine afterwards where the resulting combined text pieces should be split.
+        # So instead we use a custom interpreter that parses and collects all text chunks as they are extracted.
         page.extract_text(visitor_operand_before=interpret_chunk)
         unassignable_parts.append("\n")
         pagecount += 1
@@ -169,7 +173,7 @@ def prettify_and_enrich_finanzreport(table, filename):
     
     ## TODO implement "smart" features
     # renamed["Category"] = (figure out based on other columns - bills, groceries, rent...)
-    
+
     renamed["Dateiname"] = filename
     
     return renamed
