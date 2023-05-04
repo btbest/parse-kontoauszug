@@ -8,6 +8,7 @@ from pypdf import PdfReader
 
 ACCOUNT_HEADER = "Girokonto"
 TABLE_HEADERS = ("Buchungstag", "Vorgang", "Auftraggeber", "Buchungstext", "Ausgang")
+PRINT_HEADERS = ("Buchungstag (orig)", "Vorgang (orig)", "Auftraggeber (orig)", "Buchungstext (orig)", "Ausgang/Eingang (orig)")
 ACCOUNT_END_SIGNAL_1 = "Neuer"
 ACCOUNT_END_SIGNAL_2 = "Saldo" # both signals appear one after another = account finished
 ENCODING = "cp1252"
@@ -158,28 +159,26 @@ def parse_finanzreport(fp):
 def prettify_and_enrich_finanzreport(table, filename):
     reordered = table.reindex(sorted(table.columns), axis=1)
 
-    print_headers = list(TABLE_HEADERS)
-    print_headers[-1] = "Betrag (Originaltext)"
     headers_map = {}
-    for i in range(len(print_headers)):
-        headers_map[reordered.columns[i]] = print_headers[i]
+    for i in range(len(PRINT_HEADERS)):
+        headers_map[reordered.columns[i]] = PRINT_HEADERS[i]
     renamed = reordered.rename(columns=headers_map)
 
-    numerified_betrag = renamed["Betrag (Originaltext)"].str.replace(".","").str.replace(",",".")
+    renamed["Dateiname"] = filename
+
+    iban_named_matches: DataFrame = renamed[PRINT_HEADERS[2]].str.extract(REGEX_IBANBIC)
+    renamed["Auftraggeber-Name"] = iban_named_matches["sender"].fillna(renamed[PRINT_HEADERS[2]])
+    renamed["Auftraggeber-IBAN/BIC"] = iban_named_matches["ibanbic"]
+
+    ref_named_matches: DataFrame = renamed[PRINT_HEADERS[3]].str.extract(REGEX_REFTEXT)
+    renamed["Buchungsnotiz"] = ref_named_matches["manualref"].fillna(renamed[PRINT_HEADERS[3]])
+    renamed["Buchungsreferenz"] = ref_named_matches["endref"]
+
+    numerified_betrag = renamed[PRINT_HEADERS[4]].str.replace(".","").str.replace(",",".")
     renamed["Betrag (Zahl)"] = to_numeric(numerified_betrag)
-
-    iban = renamed["Auftraggeber"].str.extract(REGEX_IBANBIC)
-    renamed["Auftraggeber-Name"] = iban["sender"].fillna(renamed["Auftraggeber"])
-    renamed["Auftraggeber-IBAN/BIC"] = iban["ibanbic"]
-
-    reftext = renamed["Buchungstext"].str.extract(REGEX_REFTEXT)
-    renamed["Buchungsnotiz"] = reftext["manualref"].fillna(renamed["Buchungstext"])
-    renamed["Buchungsreferenz"] = reftext["endref"]
 
     ## TODO implement "smart" features
     # renamed["Category"] = (figure out based on other columns - bills, groceries, rent...)
-
-    renamed["Dateiname"] = filename
     
     return renamed
         
