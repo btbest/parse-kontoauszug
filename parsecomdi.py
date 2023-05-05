@@ -4,6 +4,7 @@ from bisect import bisect_right
 from os import getcwd
 from pathlib import Path
 from pandas import DataFrame, to_numeric, concat
+from numpy import nan
 from pypdf import PdfReader
 
 ACCOUNT_HEADER = "Girokonto"
@@ -17,7 +18,27 @@ TITLE_FONT_SIZE_THRESHOLD = 9 # bigger than this = account title
 LINE_BREAK_THRESHOLD = 11 # smaller than this = line break (not table row break)
 REGEX_DATE = "\d{2}\.\d{2}\.\d{4}"
 REGEX_IBANBIC = "(?P<sender>.+?) (?P<ibanbic>[A-Z]{2}\d{2}[A-Z0-9]+ [A-Z]{6}[A-Z0-9]{5})" # https://stackoverflow.com/questions/21928083/iban-validation-check
-REGEX_REFTEXT = "(?P<manualref>.+?) End-to-End-Ref\.:(?P<endref>.*)"
+REGEX_REFTEXT = "(?P<manualref>.*?) ?End-to-End-Ref\.:(?P<endref>.*)"
+CATEGORY_REGEX = [
+    ("Auftraggeber-Name", "comdirect Visa", "Ausschließen", "Interner Übertrag"),
+    ("Auftraggeber-Name", "(?i:stadtwerke)", "Wohnen", "Strom / Wasser / Heizung"),
+    ("Auftraggeber-Name", "(?i:kaufland)", "Lebenshaltung", "Lebensmittel"),
+    ("Auftraggeber-Name", "(?i:obi)", "Lebenshaltung", "Reparatur / Renovieren / Garten"),
+    ("Auftraggeber-Name", "(?i:db vertrieb)|(?i:rnv)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"),
+    ("Auftraggeber-Name", "(?:OIL)", "Verkehrsmittel", "Auto / Tanken"),
+    ("Auftraggeber-Name", "(?i:unitymedia)|(?i:vodafone)|(?i:telefonica)|(?i:drillisch)", "Digital", "Internet / Telefon"),
+    ("Auftraggeber-Name", "(?i:rundfunk)", "Digital", "Rundfunksteuer"),
+    ("Auftraggeber-Name", "(?i:mcdonalds)", "Freizeit", "Gastronomie"),
+    ("Buchungsnotiz", "(?i:darlehen)", "Wohnen", "Kredit"),
+    ("Buchungsnotiz", "(?i:miete)", "Wohnen", "Miete"),
+    ("Buchungsnotiz", "(?i:hausgeld)", "Wohnen", "Hausgeld"),
+    ("Buchungsnotiz", "Uebertrag auf", "Ausschließen", "Interner Übertrag"),
+    ("Buchungsnotiz", "(?i:wage)|(?i:salary)|(?i:gehalt)|(?i:entgelt)", "Einkommen", "Gehalt"),
+    ("Buchungsnotiz", "(?i:bargeldeinzahlung)", "Einkommen", "Bargeldeinzahlung"),
+    ("Buchungsnotiz", "(?i:dbvertrieb)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"), # when paying via Paypal
+    ("Buchungsnotiz", "(?i:ryanair)", "Reisen", "Flug / Bahn / Bus / Taxi"), # when paying via Paypal
+    ("Buchungsnotiz", "(?i:humblebundl)", "Freizeit", "Hobbies"), # when paying via Paypal
+]
 
 def parse_finanzreport(fp):
     out_of_account_parts = []
@@ -177,8 +198,13 @@ def prettify_and_enrich_finanzreport(table, filename):
     numerified_betrag = renamed[PRINT_HEADERS[4]].str.replace(".","").str.replace(",",".")
     renamed["Betrag (Zahl)"] = to_numeric(numerified_betrag)
 
-    ## TODO implement "smart" features
-    # renamed["Category"] = (figure out based on other columns - bills, groceries, rent...)
+    renamed["Kategorie"] = nan
+    renamed["Unterkategorie"] = nan
+    
+    for matchcol, regex, category, subcategory in CATEGORY_REGEX:
+        matches = renamed[matchcol].str.contains(regex, na=False)
+        renamed["Kategorie"] = renamed["Kategorie"].where(~matches, other=category) # where() replaces False with other m(
+        renamed["Unterkategorie"] = renamed["Unterkategorie"].where(~matches, other=subcategory) # where() replaces False with other m(
     
     return renamed
         
