@@ -23,29 +23,37 @@ LINE_BREAK_THRESHOLD = 12.01 # smaller than this = line break (not table row bre
 REGEX_DATE = "\d{2}\.\d{2}\.\d{4}"
 REGEX_IBANBIC = "(?P<sender>.+?) (?P<ibanbic>[A-Z]{2}\d{2}[A-Z0-9]+ [A-Z]{6}[A-Z0-9]{5})" # https://stackoverflow.com/questions/21928083/iban-validation-check
 REGEX_REFTEXT = "(?P<manualref>.*?) ?End-to-End-Ref\.:(?P<endref>.*)"
+END_WORD = "(?:[^a-zA-Z]|$)"
 CATEGORY_REGEX = [
     ("Vorgang (orig)", "(?i:wertpapiere)", "Depot", "Kauf / Verkauf"),
     ("Auftraggeber-Name", "comdirect Visa", "Ausschließen", "Interner Übertrag"),
     ("Auftraggeber-Name", "(?i:stadtwerke)", "Wohnen", "Strom / Wasser / Heizung"),
-    ("Auftraggeber-Name", "(?i:kaufland)", "Lebenshaltung", "Lebensmittel"),
+    ("Auftraggeber-Name", "(?i:kaufland)|(?i:lidl)|(?i:aldi)|(?i:rewe)|(?i:penny)|(?i:edeka)|(?i:tegut)", "Lebenshaltung", "Lebensmittel"),
+    ("Auftraggeber-Name", "(?i:dm drogeriemarkt)|(?i:rossmann)", "Lebenshaltung", "Drogerie"),
+    ("Auftraggeber-Name", "(?i:deichmann)|(?i:c+a)", "Lebenshaltung", "Kleidung / Schuhe"),
     ("Auftraggeber-Name", "(?i:obi)", "Lebenshaltung", "Reparatur / Renovieren / Garten"),
+    ("Auftraggeber-Name", "(?i:apotheke)", "Lebenshaltung", "Medikamente"),
     ("Auftraggeber-Name", "(?i:db vertrieb)|(?i:deutsche bahn)|(?i:rnv)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"),
     ("Auftraggeber-Name", "(?:OIL)", "Verkehrsmittel", "Auto / Tanken"),
-    ("Auftraggeber-Name", "(?i:unitymedia)|(?i:vodafone)|(?i:telefonica)|(?i:drillisch)", "Digital", "Internet / Telefon"),
+    ("Auftraggeber-Name", "(?i:unitymedia)|(?i:vodafone)|(?i:telefonica)|(?i:drillisch)|(?i:congstar)", "Digital", "Internet / Telefon"),
     ("Auftraggeber-Name", "(?i:rundfunk)", "Digital", "Rundfunksteuer"),
-    ("Auftraggeber-Name", "(?i:mcdonalds)", "Freizeit", "Gastronomie"),
-    ("Auftraggeber-Name", "(?i:coneplex)", "Freizeit", "Unterhaltung / Kino / Kultur"),
+    ("Auftraggeber-Name", f"(?i:mcdonalds)|(?:kfc{END_WORD})|(?:gastronomie)", "Freizeit", "Gastronomie"),
+    ("Auftraggeber-Name", "(?i:cineplex)|(?i:filmpalast)", "Freizeit", "Unterhaltung / Kino / Kultur"),
     ("Auftraggeber-Name", "(?i:germanwings)", "Reisen", "Flug / Bahn / Bus / Taxi"),
+    ("Auftraggeber-Name", "(?i:bundesagentur für arbeit)", "Einkommen", "Arbeitslosengeld"),
     ("Buchungsnotiz", "(?i:darlehen)", "Wohnen", "Kredit"),
     ("Buchungsnotiz", "(?i:miete)", "Wohnen", "Miete"),
+    ("Buchungsnotiz", "(?i:nebenkostenabrechnung)", "Wohnen", "Miete"),
     ("Buchungsnotiz", "(?i:hausgeld)", "Wohnen", "Hausgeld"),
     ("Buchungsnotiz", "(?i:uebertrag auf)", "Ausschließen", "Interner Übertrag"),
-    ("Buchungsnotiz", "(?i:wage)|(?i:salary)|(?i:gehalt)|(?i:entgelt)", "Einkommen", "Gehalt"),
-    ("Buchungsnotiz", "(?i:bargeldeinzahlung)", "Einkommen", "Bargeldeinzahlung"),
+    ("Buchungsnotiz", f"(?i:wage{END_WORD})|(?i:salary)|(?i:gehalt)|(?i:lohn)|(?i:bezuege )", "Einkommen", "Gehalt"),
     ("Buchungsnotiz", "(?i:ertraegnisgutschrift)", "Einkommen", "Sparen / Anlegen"),
+    ("Buchungsnotiz", "(?i:bargeldeinzahlung)", "Unkategorisiert", "Bargeldeinzahlung"),
+    ("Buchungsnotiz", "(?i:bargeldauszahlung)", "Unkategorisiert", "Bargeldauszahlung"),
+    ("Buchungsnotiz", "(?i:apotheke)", "Lebenshaltung", "Medikamente"),
     ("Buchungsnotiz", "(?i:dbvertrieb)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"), # when paying via Paypal
     ("Buchungsnotiz", "(?i:ryanair)", "Reisen", "Flug / Bahn / Bus / Taxi"), # when paying via Paypal
-    ("Buchungsnotiz", "(?i:humblebundl)", "Freizeit", "Hobbies"), # when paying via Paypal
+    ("Buchungsnotiz", "(?i:humblebundl)(?i:steam games)(?i:wargaming)", "Freizeit", "Hobbies"), # when paying via Paypal
 ]
 
 def parse_finanzreport(fp):
