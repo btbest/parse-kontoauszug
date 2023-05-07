@@ -24,21 +24,25 @@ REGEX_DATE = "\d{2}\.\d{2}\.\d{4}"
 REGEX_IBANBIC = "(?P<sender>.+?) (?P<ibanbic>[A-Z]{2}\d{2}[A-Z0-9]+ [A-Z]{6}[A-Z0-9]{5})" # https://stackoverflow.com/questions/21928083/iban-validation-check
 REGEX_REFTEXT = "(?P<manualref>.*?) ?End-to-End-Ref\.:(?P<endref>.*)"
 CATEGORY_REGEX = [
+    ("Vorgang (orig)", "(?i:wertpapiere)", "Depot", "Kauf / Verkauf"),
     ("Auftraggeber-Name", "comdirect Visa", "Ausschließen", "Interner Übertrag"),
     ("Auftraggeber-Name", "(?i:stadtwerke)", "Wohnen", "Strom / Wasser / Heizung"),
     ("Auftraggeber-Name", "(?i:kaufland)", "Lebenshaltung", "Lebensmittel"),
     ("Auftraggeber-Name", "(?i:obi)", "Lebenshaltung", "Reparatur / Renovieren / Garten"),
-    ("Auftraggeber-Name", "(?i:db vertrieb)|(?i:rnv)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"),
+    ("Auftraggeber-Name", "(?i:db vertrieb)|(?i:deutsche bahn)|(?i:rnv)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"),
     ("Auftraggeber-Name", "(?:OIL)", "Verkehrsmittel", "Auto / Tanken"),
     ("Auftraggeber-Name", "(?i:unitymedia)|(?i:vodafone)|(?i:telefonica)|(?i:drillisch)", "Digital", "Internet / Telefon"),
     ("Auftraggeber-Name", "(?i:rundfunk)", "Digital", "Rundfunksteuer"),
     ("Auftraggeber-Name", "(?i:mcdonalds)", "Freizeit", "Gastronomie"),
+    ("Auftraggeber-Name", "(?i:coneplex)", "Freizeit", "Unterhaltung / Kino / Kultur"),
+    ("Auftraggeber-Name", "(?i:germanwings)", "Reisen", "Flug / Bahn / Bus / Taxi"),
     ("Buchungsnotiz", "(?i:darlehen)", "Wohnen", "Kredit"),
     ("Buchungsnotiz", "(?i:miete)", "Wohnen", "Miete"),
     ("Buchungsnotiz", "(?i:hausgeld)", "Wohnen", "Hausgeld"),
-    ("Buchungsnotiz", "Uebertrag auf", "Ausschließen", "Interner Übertrag"),
+    ("Buchungsnotiz", "(?i:uebertrag auf)", "Ausschließen", "Interner Übertrag"),
     ("Buchungsnotiz", "(?i:wage)|(?i:salary)|(?i:gehalt)|(?i:entgelt)", "Einkommen", "Gehalt"),
     ("Buchungsnotiz", "(?i:bargeldeinzahlung)", "Einkommen", "Bargeldeinzahlung"),
+    ("Buchungsnotiz", "(?i:ertraegnisgutschrift)", "Einkommen", "Sparen / Anlegen"),
     ("Buchungsnotiz", "(?i:dbvertrieb)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"), # when paying via Paypal
     ("Buchungsnotiz", "(?i:ryanair)", "Reisen", "Flug / Bahn / Bus / Taxi"), # when paying via Paypal
     ("Buchungsnotiz", "(?i:humblebundl)", "Freizeit", "Hobbies"), # when paying via Paypal
