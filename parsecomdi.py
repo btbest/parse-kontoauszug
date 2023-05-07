@@ -10,12 +10,16 @@ from pypdf import PdfReader
 ACCOUNT_HEADER = "Girokonto"
 TABLE_HEADERS = ("Buchungstag", "Vorgang", "Auftraggeber", "Buchungstext", "Ausgang")
 PRINT_HEADERS = ("Buchungstag (orig)", "Vorgang (orig)", "Auftraggeber (orig)", "Buchungstext (orig)", "Ausgang/Eingang (orig)")
-ACCOUNT_END_SIGNAL_1 = "Neuer"
-ACCOUNT_END_SIGNAL_2 = "Saldo" # both signals appear one after another = account finished
+ACCOUNT_END = "Neuer Saldo" # 2014 reports and older present the phrase as one text chunk
+ACCOUNT_END_SIGNAL_1 = "Neuer" # newer reports have the two words in separate chunks
+ACCOUNT_END_SIGNAL_2 = "Saldo"
 ENCODING = "cp1252"
+MISALIGNED_TABLE_LEEWAY = 1 # 2014 and older reports don't quite align all-caps texts in the Girokonto table correctly with their column header
 LAST_HEADER_LEEWAY = 10 # Last column is right-aligned instead of left-aligned, so some values in this column are printed further left than the header
-TITLE_FONT_SIZE_THRESHOLD = 9 # bigger than this = account title
-LINE_BREAK_THRESHOLD = 11 # smaller than this = line break (not table row break)
+# FIXME: There's a possibility that LAST_HEADER_LEEWAY needs to be slightly bigger for reports with six-figure transactions and up
+TITLE_FONT_SIZE_THRESHOLD = 9 # bigger than or equal this = account title
+ANY_FONT_SIZE_THRESHOLD = 3 # smaller than this = illegible text (to be ignored) or bug
+LINE_BREAK_THRESHOLD = 12.01 # smaller than this = line break (not table row break)
 REGEX_DATE = "\d{2}\.\d{2}\.\d{4}"
 REGEX_IBANBIC = "(?P<sender>.+?) (?P<ibanbic>[A-Z]{2}\d{2}[A-Z0-9]+ [A-Z]{6}[A-Z0-9]{5})" # https://stackoverflow.com/questions/21928083/iban-validation-check
 REGEX_REFTEXT = "(?P<manualref>.*?) ?End-to-End-Ref\.:(?P<endref>.*)"
@@ -43,6 +47,7 @@ CATEGORY_REGEX = [
 def parse_finanzreport(fp):
     out_of_account_parts = []
     unassignable_parts = []
+    cur_font_size_old_pdf_format = 0 # 2014 and older reports contain font size in separate chunks from the text they apply to
     active_account = ""
     chunks_table = DataFrame()
     header_xcoords = []
@@ -54,6 +59,7 @@ def parse_finanzreport(fp):
     row_does_not_start_with_date = True
 
     def interpret_chunk(operator, operandargs, __transformation_matrix, text_matrix):
+        nonlocal cur_font_size_old_pdf_format
         nonlocal active_account
         nonlocal chunks_table
         nonlocal header_xcoords
@@ -63,10 +69,16 @@ def parse_finanzreport(fp):
         nonlocal cur_row
         nonlocal cur_row_y
         nonlocal row_does_not_start_with_date
-        if operator != b'TJ':
+        if operator != b'TJ' and operator != b'Tj':
+            if operator == b'Tf':
+                cur_font_size_old_pdf_format = operandargs[1]
             return
-        text = pdfdecode(operandargs[0][0])
+        text = pdfdecode(operandargs[0][0] if operator == b'TJ' else operandargs[0])
         font_size = text_matrix[0]
+        if font_size < ANY_FONT_SIZE_THRESHOLD and cur_font_size_old_pdf_format < ANY_FONT_SIZE_THRESHOLD:
+            unassignable_parts.append(text)
+            return
+        font_size = font_size if font_size >= ANY_FONT_SIZE_THRESHOLD else cur_font_size_old_pdf_format
         x = text_matrix[4]
         y = text_matrix[5]
         # Handle title
@@ -87,7 +99,7 @@ def parse_finanzreport(fp):
                 first_header = x
                 cur_row_y = y
             return
-        column = find_closest_header(x, header_xcoords)
+        column = find_closest_header(x + LAST_HEADER_LEEWAY, header_xcoords)
         # Skip if text is outside table, or no headers seen yet
         # Also skip text chunks from higher up in the page than the current table row.
         # The report format since June 2016 throws text chunks from the page header into the middle of the table for some reason.
@@ -99,7 +111,7 @@ def parse_finanzreport(fp):
         if text == ACCOUNT_END_SIGNAL_1:
             end_signal_1_seen = True
             return
-        if end_signal_1_seen and text == ACCOUNT_END_SIGNAL_2:
+        if text == ACCOUNT_END or (end_signal_1_seen and text == ACCOUNT_END_SIGNAL_2):
             active_account = ""
             return
         elif end_signal_1_seen:
@@ -123,6 +135,7 @@ def parse_finanzreport(fp):
         if row_does_not_start_with_date:
             unassignable_parts.append(text)
             return
+        #print(int(column), int(prev_col), len(header_xcoords), text)
         if column == prev_col:
             chunks_table.at[cur_row, column] = f"{chunks_table.loc[cur_row, column]} {text}"
         else:
@@ -166,12 +179,14 @@ def parse_finanzreport(fp):
     reader = PdfReader(fp, strict=True)
     pagecount = 1
     for page in reader.pages:
+        out_of_account_parts.append(f"Page {pagecount}: ")
         unassignable_parts.append(f"Page {pagecount}: ")
         # The default behaviour of extract_text misinterprets spacer signals in Finanzreport PDFs.
         # The resulting text lacks spaces and line breaks where it should have them.
         # It is impossible to determine afterwards where the resulting combined text pieces should be split.
         # So instead we use a custom interpreter that parses and collects all text chunks as they are extracted.
         page.extract_text(visitor_operand_before=interpret_chunk)
+        out_of_account_parts.append("\n")
         unassignable_parts.append("\n")
         pagecount += 1
     print(f"Extracted {len(chunks_table.index)} cash flow items from {fp.name}.")
