@@ -193,6 +193,9 @@ def parse_finanzreport(fp):
         out_of_account_parts.append("\n")
         unassignable_parts.append("\n")
         pagecount += 1
+    for x in header_xcoords:
+        if x not in chunks_table.columns:
+            chunks_table[x] = ""
     print(f"Extracted {len(chunks_table.index)} cash flow items from {fp.name}.")
     return chunks_table
 
@@ -243,6 +246,15 @@ if __name__ == '__main__':
     collected_tables = []
     for f in wd.glob("**/Finanzreport*.pdf"):
         girokonto_table = parse_finanzreport(f)
+        if girokonto_table.empty:
+            print(f"No transations found in {f.name}. Please check if this is an error.")
+            continue
+        if len(girokonto_table.columns) != len(TABLE_HEADERS):
+            print(f"Extracted transaction table only had {len(girokonto_table.columns)} columns. Please check why this table isn't parsed correctly. Table dump:")
+            print(f"Headers: {girokonto_table.columns}")
+            print(f"first row: {girokonto_table.iloc[0]}")
+            print(girokonto_table)
+            continue
         collected_tables.append(prettify_and_enrich_finanzreport(girokonto_table, f.name))
     out_p = args.out if args.out else "girokonto.csv"
     write_finanzreports(collected_tables, out_p)
