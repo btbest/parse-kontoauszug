@@ -26,12 +26,13 @@ REGEX_REFTEXT = "(?P<manualref>.*?) ?End-to-End-Ref\.:(?P<endref>.*)"
 END_WORD = "(?:[^a-zA-Z]|$)"
 CATEGORY_REGEX = [
     ("Vorgang (orig)", "(?i:wertpapiere)", "Depot", "Kauf / Verkauf"),
+    ("Vorgang (orig)", "(?i:Termingeld)", "Depot", "Kauf / Verkauf"),
     ("Auftraggeber-Name", "comdirect Visa", "Ausschließen", "Interner Übertrag"),
     ("Auftraggeber-Name", "(?i:stadtwerke)", "Wohnen", "Strom / Wasser / Heizung"),
     ("Auftraggeber-Name", "(?i:kaufland)|(?i:lidl)|(?i:aldi)|(?i:rewe)|(?i:penny)|(?i:edeka)|(?i:tegut)", "Lebenshaltung", "Lebensmittel"),
     ("Auftraggeber-Name", "(?i:dm drogeriemarkt)|(?i:rossmann)", "Lebenshaltung", "Drogerie"),
     ("Auftraggeber-Name", "(?i:deichmann)|(?i:c+a)", "Lebenshaltung", "Kleidung / Schuhe"),
-    ("Auftraggeber-Name", "(?i:obi)", "Lebenshaltung", "Reparatur / Renovieren / Garten"),
+    ("Auftraggeber-Name", f"(?i:obi{END_WORD})", "Lebenshaltung", "Reparatur / Renovieren / Garten"),
     ("Auftraggeber-Name", "(?i:apotheke)", "Lebenshaltung", "Medikamente"),
     ("Auftraggeber-Name", "(?i:db vertrieb)|(?i:deutsche bahn)|(?i:rnv)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"),
     ("Auftraggeber-Name", "(?:OIL)", "Verkehrsmittel", "Auto / Tanken"),
