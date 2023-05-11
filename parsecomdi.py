@@ -3,12 +3,14 @@ import re
 from bisect import bisect_right
 from os import getcwd
 from pathlib import Path
+from statistics import median
 from pandas import DataFrame, to_numeric, concat
 from numpy import nan
 from pypdf import PdfReader
 
-ACCOUNT_HEADER = "Girokonto"
+ACCOUNT_TITLES = ("Girokonto", "Visa-Karte")
 TABLE_HEADERS = ("Buchungstag", "Vorgang", "Auftraggeber", "Buchungstext", "Ausgang")
+IGNORED_SUBHEADERS = ("Valuta", "Umsatztag")
 PRINT_HEADERS = ("Buchungstag (orig)", "Vorgang (orig)", "Auftraggeber (orig)", "Buchungstext (orig)", "Ausgang/Eingang (orig)")
 ACCOUNT_END = "Neuer Saldo" # 2014 reports and older present the phrase as one text chunk
 ACCOUNT_END_SIGNAL_1 = "Neuer" # newer reports have the two words in separate chunks
@@ -20,7 +22,7 @@ LAST_HEADER_LEEWAY = 10 # Last column is right-aligned instead of left-aligned, 
 TITLE_FONT_SIZE_THRESHOLD = 9 # bigger than or equal this = account title
 ANY_FONT_SIZE_THRESHOLD = 3 # smaller than this = illegible text (to be ignored) or bug
 LINE_BREAK_THRESHOLD = 12.01 # smaller than this = line break (not table row break)
-REGEX_DATE = "\d{2}\.\d{2}\.\d{4}"
+REGEX_DATE = "A?\d{2}\.\d{2}\.\d{4}" # for some reason, in at least one instance, the date said "A29.11.2019"
 REGEX_IBANBIC = "(?P<sender>.+?) (?P<ibanbic>[A-Z]{2}\d{2}[A-Z0-9]+ [A-Z]{6}[A-Z0-9]{5})" # https://stackoverflow.com/questions/21928083/iban-validation-check
 REGEX_REFTEXT = "(?P<manualref>.*?) ?End-to-End-Ref\.:(?P<endref>.*)"
 END_WORD = "(?:[^a-zA-Z]|$)"
@@ -46,7 +48,7 @@ CATEGORY_REGEX = [
     ("Buchungsnotiz", "(?i:miete)", "Wohnen", "Miete"),
     ("Buchungsnotiz", "(?i:nebenkostenabrechnung)", "Wohnen", "Miete"),
     ("Buchungsnotiz", "(?i:hausgeld)", "Wohnen", "Hausgeld"),
-    ("Buchungsnotiz", "(?i:uebertrag auf)", "Ausschließen", "Interner Übertrag"),
+    ("Buchungsnotiz", "(?i:uebertrag auf)|(?i:ueberweisung auf v\s?isa-kar\s?te)|(?i:summe wochenabrechnung \s?visa)|(?i:summe monatsabrechnung visa)", "Ausschließen", "Interner Übertrag"),
     ("Buchungsnotiz", f"(?i:wage{END_WORD})|(?i:salary)|(?i:gehalt)|(?i:lohn)|(?i:bezuege )", "Einkommen", "Gehalt"),
     ("Buchungsnotiz", "(?i:ertraegnisgutschrift)", "Einkommen", "Sparen / Anlegen"),
     ("Buchungsnotiz", "(?i:bargeldeinzahlung)", "Unkategorisiert", "Bargeldeinzahlung"),
@@ -61,9 +63,9 @@ def parse_finanzreport(fp):
     out_of_account_parts = []
     unassignable_parts = []
     cur_font_size_old_pdf_format = 0 # 2014 and older reports contain font size in separate chunks from the text they apply to
+    account_tables = {title:DataFrame() for title in ACCOUNT_TITLES}
     active_account = ""
-    chunks_table = DataFrame()
-    header_xcoords = []
+    header_xcoords = {title:[] for title in ACCOUNT_TITLES}
     end_signal_1_seen = False
     first_header = 0
     prev_col = 0.
@@ -73,8 +75,8 @@ def parse_finanzreport(fp):
 
     def interpret_chunk(operator, operandargs, __transformation_matrix, text_matrix):
         nonlocal cur_font_size_old_pdf_format
+        nonlocal account_tables
         nonlocal active_account
-        nonlocal chunks_table
         nonlocal header_xcoords
         nonlocal end_signal_1_seen
         nonlocal first_header
@@ -96,23 +98,30 @@ def parse_finanzreport(fp):
         y = text_matrix[5]
         # Handle title
         if is_account_title(text, font_size):
-            active_account = text
+            active_account = get_corresponding_title(text)
+            first_header = 0
+            prev_col = 0.
+            cur_row_y = 10000000.
+            cur_row = 0
+            row_does_not_start_with_date = True
             return
         # Skip until title was seen
         if not active_account:
             out_of_account_parts.append(text)
             return
+        table = account_tables[active_account]
+        headers = header_xcoords[active_account]
         # Handle table headers
         if is_table_header(text):
             header_x = x if not is_last_table_header(text) else x - LAST_HEADER_LEEWAY
-            if header_x not in header_xcoords:
-                header_xcoords.append(header_x)
-                header_xcoords = sorted(header_xcoords)
+            if header_x not in headers:
+                headers.append(header_x)
+                headers = sorted(headers)
             if is_first_table_header(text):
                 first_header = x
                 cur_row_y = y
             return
-        column = find_closest_header(x + LAST_HEADER_LEEWAY, header_xcoords)
+        column = find_closest_header(x + LAST_HEADER_LEEWAY, headers)
         # Skip if text is outside table, or no headers seen yet
         # Also skip text chunks from higher up in the page than the current table row.
         # The report format since June 2016 throws text chunks from the page header into the middle of the table for some reason.
@@ -135,8 +144,8 @@ def parse_finanzreport(fp):
             # These two dates are practically always identical, so discard the second.
             if is_regular_text_line_break(y):
                 # Print out in case dates are not identical (usually investment transactions, sometimes cash withdrawal)
-                if text != "Valuta" and text != chunks_table.loc[cur_row, column]:
-                    print(f"Info: Valuta eines Vorgangs am {text} =/= Buchungstag {chunks_table.loc[cur_row, column]}.")
+                if text not in IGNORED_SUBHEADERS and text != table.loc[cur_row, column]:
+                    print(f"Info: Wertstellung eines Vorgangs am {text} =/= Buchungstag {table.loc[cur_row, column]}.")
                 return
             if not is_date(text):
                 row_does_not_start_with_date = True
@@ -148,11 +157,11 @@ def parse_finanzreport(fp):
         if row_does_not_start_with_date:
             unassignable_parts.append(text)
             return
-        #print(int(column), int(prev_col), len(header_xcoords), text)
+        #print(int(column), int(prev_col), len(headers), text)
         if column == prev_col:
-            chunks_table.at[cur_row, column] = f"{chunks_table.loc[cur_row, column]} {text}"
+            table.at[cur_row, column] = f"{table.loc[cur_row, column]} {text}"
         else:
-            chunks_table.at[cur_row, column] = text
+            table.at[cur_row, column] = text
         prev_col = column
 
     def pdfdecode(byteslist):
@@ -176,7 +185,10 @@ def parse_finanzreport(fp):
         return (cur_row_y - y) < LINE_BREAK_THRESHOLD
 
     def is_account_title(text, font_size):
-        return text == ACCOUNT_HEADER and font_size > TITLE_FONT_SIZE_THRESHOLD
+        return font_size > TITLE_FONT_SIZE_THRESHOLD and any(title in text for title in ACCOUNT_TITLES)
+    
+    def get_corresponding_title(text):
+        return [title for title in ACCOUNT_TITLES if title in text][0]
 
     def is_table_header(text):
         for h in TABLE_HEADERS:
@@ -202,21 +214,26 @@ def parse_finanzreport(fp):
         out_of_account_parts.append("\n")
         unassignable_parts.append("\n")
         pagecount += 1
-    for x in header_xcoords:
-        if x not in chunks_table.columns:
-            chunks_table[x] = ""
-    print(f"Extracted {len(chunks_table.index)} cash flow items from {fp.name}.")
-    return chunks_table
+    for title, table in account_tables.items():
+        if title == "Visa-Karte" and len(table.columns) == 4:
+            # Old report format does not have the middle heading "Auftraggeber", insert a dummy
+            table[median(header_xcoords[title])] = ""
+        for x in header_xcoords[title]:
+            if x not in table.columns:
+                table[x] = ""
+        print(f"Extracted {len(table.index)} cash flow items in {title} from {fp.name}.")
+    return account_tables
 
-def prettify_and_enrich_finanzreport(table, filename):
+def prettify_and_enrich_finanzreport(table, filename, account_title):
     reordered = table.reindex(sorted(table.columns), axis=1)
-
+    
     headers_map = {}
     for i in range(len(PRINT_HEADERS)):
         headers_map[reordered.columns[i]] = PRINT_HEADERS[i]
     renamed = reordered.rename(columns=headers_map)
 
     renamed["Dateiname"] = filename
+    renamed["Konto"] = account_title
 
     iban_named_matches: DataFrame = renamed[PRINT_HEADERS[2]].str.extract(REGEX_IBANBIC)
     renamed["Auftraggeber-Name"] = iban_named_matches["sender"].fillna(renamed[PRINT_HEADERS[2]])
@@ -238,9 +255,9 @@ def prettify_and_enrich_finanzreport(table, filename):
         renamed["Unterkategorie"] = renamed["Unterkategorie"].where(~matches, other=subcategory) # where() replaces False with other m(
     
     return renamed
-        
+
 def write_finanzreports(tables, outfile):
-    print(f"Writing table from {len(tables)} files.")
+    print(f"Writing final table from {len(tables)} account tables.")
     table = concat(tables, ignore_index=True)
     table.to_csv(outfile, sep=";", encoding=ENCODING, index=False)
                
@@ -254,16 +271,19 @@ if __name__ == '__main__':
     wd = in_dir if in_dir.is_absolute() else getcwd()/in_dir
     collected_tables = []
     for f in wd.glob("**/Finanzreport*.pdf"):
-        girokonto_table = parse_finanzreport(f)
-        if girokonto_table.empty:
+        table_per_account: dict[DataFrame] = parse_finanzreport(f)
+        if len(table_per_account) != len(ACCOUNT_TITLES):
+            print(f"{abs(len(table_per_account)-len(ACCOUNT_TITLES))} account titles had no matching table. Please check why.")
+            continue
+        if all(table.empty for table in table_per_account.values()):
             print(f"No transations found in {f.name}. Please check if this is an error.")
             continue
-        if len(girokonto_table.columns) != len(TABLE_HEADERS):
-            print(f"Extracted transaction table only had {len(girokonto_table.columns)} columns. Please check why this table isn't parsed correctly. Table dump:")
-            print(f"Headers: {girokonto_table.columns}")
-            print(f"first row: {girokonto_table.iloc[0]}")
-            print(girokonto_table)
+        if any([not table.empty and len(table.columns) != len(TABLE_HEADERS) for table in table_per_account.values()]):
+            print("At least one table does not have exactly one column per expected header. Please check why.")
             continue
-        collected_tables.append(prettify_and_enrich_finanzreport(girokonto_table, f.name))
+        prettified_tables = [
+            prettify_and_enrich_finanzreport(table, f.name, account) for account, table in table_per_account.items() if not table.empty
+            ]
+        [collected_tables.append(table) for table in prettified_tables]
     out_p = args.out if args.out else "girokonto.csv"
     write_finanzreports(collected_tables, out_p)
