@@ -55,8 +55,10 @@ CATEGORY_REGEX = [
     ("Buchungsnotiz", "(?i:bargeldauszahlung)", "Unkategorisiert", "Bargeldauszahlung"),
     ("Buchungsnotiz", "(?i:apotheke)", "Lebenshaltung", "Medikamente"),
     ("Buchungsnotiz", "(?i:dbvertrieb)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"), # when paying via Paypal
-    ("Buchungsnotiz", "(?i:ryanair)", "Reisen", "Flug / Bahn / Bus / Taxi"), # when paying via Paypal
-    ("Buchungsnotiz", "(?i:humblebundl)(?i:steam games)(?i:wargaming)", "Freizeit", "Hobbies"), # when paying via Paypal
+    ("Buchungsnotiz", "(?i:ryanair)|(?i:wizz air)(?i:tarom)", "Reisen", "Flug / Bahn / Bus / Taxi"), # when paying via Paypal
+    ("Buchungsnotiz", "(?i:hotel)", "Reisen", "Hotel / Unterkunft"), # when paying by VISA
+    ("Buchungsnotiz", "(?i:theater)|(?i:eventim)|(?i:fkp scorpio)", "Freizeit", "Unterhaltung / Kino / Kultur"), # when paying by VISA
+    ("Buchungsnotiz", "(?i:humblebundl)|(?i:steam\s?games)|(?i:wargaming)", "Freizeit", "Hobbies"), # when paying via Paypal
 ]
 
 def parse_finanzreport(fp):
