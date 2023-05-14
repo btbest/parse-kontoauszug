@@ -72,6 +72,7 @@ def parse_finanzreport(fp):
     first_header = 0
     prev_col = 0.
     cur_row_y = 10000000. # y is inverted (bottom = 0, top of the page = some number around 1000)
+    first_col_line_breaks_y = 0.
     cur_row = 0
     row_does_not_start_with_date = True
 
@@ -85,6 +86,7 @@ def parse_finanzreport(fp):
         nonlocal prev_col
         nonlocal cur_row
         nonlocal cur_row_y
+        nonlocal first_col_line_breaks_y
         nonlocal row_does_not_start_with_date
         if operator != b'TJ' and operator != b'Tj':
             if operator == b'Tf':
@@ -144,7 +146,8 @@ def parse_finanzreport(fp):
         if column == first_header:
             # The first column contains the transaction date and the date the value was credited to the account.
             # These two dates are practically always identical, so discard the second.
-            if is_regular_text_line_break(y):
+            if is_regular_text_line_break(y, first_col_line_breaks_y):
+                first_col_line_breaks_y = y
                 # Print out in case dates are not identical (usually investment transactions, sometimes cash withdrawal)
                 if text not in IGNORED_SUBHEADERS and text != table.loc[cur_row, column]:
                     print(f"Info: Wertstellung eines Vorgangs am {text} =/= Buchungstag {table.loc[cur_row, column]}.")
@@ -152,8 +155,10 @@ def parse_finanzreport(fp):
             if not is_date(text):
                 row_does_not_start_with_date = True
                 return
+            if text[0].isalpha():
+                text = text[1:] # Fix date "A29.11.2019" found in at least one report
             cur_row += 1
-            cur_row_y = y
+            cur_row_y = first_col_line_breaks_y = y
             row_does_not_start_with_date = False
         # Skip until we have a proper table row (eliminate page header, footer, and "Alter Saldo")
         if row_does_not_start_with_date:
@@ -183,7 +188,7 @@ def parse_finanzreport(fp):
     def is_date(text):
         return re.match(REGEX_DATE, text)
 
-    def is_regular_text_line_break(y):
+    def is_regular_text_line_break(y, cur_row_y):
         return (cur_row_y - y) < LINE_BREAK_THRESHOLD
 
     def is_account_title(text, font_size):
