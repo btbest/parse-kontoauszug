@@ -29,18 +29,20 @@ END_WORD = "(?:[^a-zA-Z]|$)"
 CATEGORY_REGEX = [
     ("Vorgang (orig)", "(?i:wertpapiere)", "Depot", "Kauf / Verkauf"),
     ("Vorgang (orig)", "(?i:Termingeld)", "Depot", "Kauf / Verkauf"),
+    ("Vorgang (orig)", "(?:Bar)", "Einkommen", "Bargeldeinzahlung"),
+    ("Vorgang (orig)", "(?i:auszahlung gaa)|(?i:barauszahlung)", "Sonstige Ausgaben", "Bargeldauszahlung"),
     ("Auftraggeber-Name", "comdirect Visa", "Ausschließen", "Interner Übertrag"),
     ("Auftraggeber-Name", "(?i:stadtwerke)", "Wohnen", "Strom / Wasser / Heizung"),
     ("Auftraggeber-Name", "(?i:kaufland)|(?i:lidl)|(?i:aldi)|(?i:rewe)|(?i:penny)|(?i:edeka)|(?i:tegut)", "Lebenshaltung", "Lebensmittel"),
-    ("Auftraggeber-Name", "(?i:dm drogeriemarkt)|(?i:rossmann)", "Lebenshaltung", "Drogerie"),
-    ("Auftraggeber-Name", "(?i:deichmann)|(?i:c+a)", "Lebenshaltung", "Kleidung / Schuhe"),
+    ("Auftraggeber-Name", "(?i:drogeriemarkt)|(?i:rossmann)", "Lebenshaltung", "Drogerie"),
+    ("Auftraggeber-Name", "(?i:deichmann)|(?i:c\+a)", "Lebenshaltung", "Kleidung / Schuhe"),
     ("Auftraggeber-Name", f"(?i:obi{END_WORD})|(?i:bauhaus{END_WORD})", "Lebenshaltung", "Heim / Garten"),
     ("Auftraggeber-Name", "(?i:apotheke)", "Lebenshaltung", "Medikamente"),
     ("Auftraggeber-Name", "(?i:db vertrieb)|(?i:deutsche bahn)|(?i:rnv)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"),
     ("Auftraggeber-Name", "(?:OIL)", "Verkehrsmittel", "Auto / Tanken"),
     ("Auftraggeber-Name", "(?i:unitymedia)|(?i:vodafone)|(?i:telefonica)|(?i:drillisch)|(?i:congstar)", "Digital", "Internet / Telefon"),
     ("Auftraggeber-Name", "(?i:rundfunk)", "Digital", "Rundfunksteuer"),
-    ("Auftraggeber-Name", f"(?i:mcdonalds)|(?i:kfc{END_WORD})|(?i:moschmosch)|(?i:gastronomie)|(?i:restaurant)", "Freizeit", "Gastronomie"),
+    ("Auftraggeber-Name", f"(?i:mcdonalds)|(?i:kfc{END_WORD})|(?i:nordsee gmbh)|(?i:moschmosch)|(?i:gastronomie)|(?i:restaurant)", "Freizeit", "Gastronomie"),
     ("Auftraggeber-Name", "(?i:cineplex)|(?i:filmpalast)", "Freizeit", "Unterhaltung / Kino / Kultur"),
     ("Auftraggeber-Name", "(?i:germanwings)", "Reisen", "Flug / Bahn / Bus / Taxi"),
     ("Auftraggeber-Name", "(?i:bundesagentur für arbeit)", "Einkommen", "Arbeitslosengeld"),
@@ -48,6 +50,8 @@ CATEGORY_REGEX = [
     ("Buchungsnotiz", "(?i:miete)", "Wohnen", "Miete"),
     ("Buchungsnotiz", "(?i:nebenkostenabrechnung)", "Wohnen", "Miete"),
     ("Buchungsnotiz", "(?i:hausgeld)", "Wohnen", "Hausgeld"),
+    ("Buchungsnotiz", f"(?i:rewe{END_WORD})", "Lebenshaltung", "Lebensmittel"),
+    ("Buchungsnotiz", f"(?i:zara{END_WORD})|(?i:primark)", "Lebenshaltung", "Kleidung / Schuhe"),
     ("Buchungsnotiz", "(?i:uebertrag auf)|(?i:ueberweisung auf v\s?isa-kar\s?te)|(?i:summe wochenabrechnung \s?visa)|(?i:summe monatsabrechnung visa)", "Ausschließen", "Interner Übertrag"),
     ("Buchungsnotiz", f"(?i:wage{END_WORD})|(?i:salary)|(?i:gehalt)|(?i:lohn)|(?i:bezuege )", "Einkommen", "Gehalt"),
     ("Buchungsnotiz", "(?i:ertraegnisgutschrift)", "Einkommen", "Sparen / Anlegen"),
@@ -55,8 +59,9 @@ CATEGORY_REGEX = [
     ("Buchungsnotiz", "(?i:bargeldauszahlung)", "Sonstige Ausgaben", "Bargeldauszahlung"),
     ("Buchungsnotiz", "(?i:apotheke)", "Lebenshaltung", "Medikamente"),
     ("Buchungsnotiz", "(?i:dbvertrieb)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"), # when paying via Paypal
-    ("Buchungsnotiz", "(?i:ryanair)|(?i:wizz air)(?i:tarom)", "Reisen", "Flug / Bahn / Bus / Taxi"), # when paying via Paypal
+    ("Buchungsnotiz", "(?i:ryanair)|(?i:wizz air)|(?i:tarom)|(?i:fluegede)", "Reisen", "Flug / Bahn / Bus / Taxi"), # when paying via Paypal
     ("Buchungsnotiz", "(?i:hotel)", "Reisen", "Hotel / Unterkunft"), # when paying by VISA
+    ("Buchungsnotiz", "(?i:burger king)", "Freizeit", "Gastronomie"),
     ("Buchungsnotiz", "(?i:theater)|(?i:eventim)|(?i:fkp scorpio)", "Freizeit", "Unterhaltung / Kino / Kultur"), # when paying by VISA
     ("Buchungsnotiz", "(?i:humblebundl)|(?i:steam\s?games)|(?i:wargaming)", "Freizeit", "Hobbies"), # when paying via Paypal
 ]
