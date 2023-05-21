@@ -40,7 +40,7 @@ CATEGORY_REGEX = [
     ("Auftraggeber-Name", "(?:OIL)", "Verkehrsmittel", "Auto / Tanken"),
     ("Auftraggeber-Name", "(?i:unitymedia)|(?i:vodafone)|(?i:telefonica)|(?i:drillisch)|(?i:congstar)", "Digital", "Internet / Telefon"),
     ("Auftraggeber-Name", "(?i:rundfunk)", "Digital", "Rundfunksteuer"),
-    ("Auftraggeber-Name", f"(?i:mcdonalds)|(?:kfc{END_WORD})|(?i:moschmosch)|(?:gastronomie)|(?:restaurant)", "Freizeit", "Gastronomie"),
+    ("Auftraggeber-Name", f"(?i:mcdonalds)|(?i:kfc{END_WORD})|(?i:moschmosch)|(?i:gastronomie)|(?i:restaurant)", "Freizeit", "Gastronomie"),
     ("Auftraggeber-Name", "(?i:cineplex)|(?i:filmpalast)", "Freizeit", "Unterhaltung / Kino / Kultur"),
     ("Auftraggeber-Name", "(?i:germanwings)", "Reisen", "Flug / Bahn / Bus / Taxi"),
     ("Auftraggeber-Name", "(?i:bundesagentur für arbeit)", "Einkommen", "Arbeitslosengeld"),
