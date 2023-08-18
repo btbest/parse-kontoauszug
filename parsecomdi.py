@@ -39,7 +39,7 @@ CATEGORY_REGEX = [
     ("Buchungsnotiz", "(?i:miete)", "Wohnen", "Miete"),
     ("Buchungsnotiz", "(?i:nebenkostenabrechnung)", "Wohnen", "Miete"),
     ("Buchungsnotiz", "(?i:hausgeld)", "Wohnen", "Hausgeld"),
-    ("Buchungsnotiz", "(?i:strom)|(?i:wasser|(?i:heizung)|(?i:fernwaerme)|(?i:abfall)", "Wohnen", "Nebenkosten"),
+    ("Buchungsnotiz", "(?i:strom)|(?i:wasser)|(?i:heizung)|(?i:fernwaerme)|(?i:abfall)", "Wohnen", "Nebenkosten"),
     ("Buchungsnotiz", f"(?i:rewe{END_WORD})", "Lebenshaltung", "Lebensmittel"),
     ("Buchungsnotiz", f"(?i:zara{END_WORD})|(?i:primark)", "Lebenshaltung", "Kleidung / Schuhe"),
     ("Buchungsnotiz", "(?i:uebertrag auf)|(?i:ueberweisung auf v\s?isa-kar\s?te)|(?i:summe wochenabrechnung \s?visa)|(?i:summe monatsabrechnung visa)", "Ausschließen", "Interner Übertrag"),
