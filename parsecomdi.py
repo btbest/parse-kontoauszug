@@ -4,6 +4,7 @@ from bisect import bisect_right
 from os import getcwd
 from pathlib import Path
 from statistics import median
+from typing import Union
 from pandas import DataFrame, to_numeric, concat
 from numpy import nan
 from pypdf import PdfReader
@@ -12,19 +13,7 @@ ACCOUNT_TITLES = ("Girokonto", "Visa-Karte")
 TABLE_HEADERS = ("Buchungstag", "Vorgang", "Auftraggeber", "Buchungstext", "Ausgang")
 IGNORED_SUBHEADERS = ("Valuta", "Umsatztag")
 PRINT_HEADERS = ("Buchungstag (orig)", "Vorgang (orig)", "Auftraggeber (orig)", "Buchungstext (orig)", "Ausgang/Eingang (orig)")
-ACCOUNT_END = "Neuer Saldo" # 2014 reports and older present the phrase as one text chunk
-ACCOUNT_END_SIGNAL_1 = "Neuer" # newer reports have the two words in separate chunks
-ACCOUNT_END_SIGNAL_2 = "Saldo"
 ENCODING = "cp1252"
-MISALIGNED_TABLE_LEEWAY = 1 # 2014 and older reports don't quite align all-caps texts in the Girokonto table correctly with their column header
-LAST_HEADER_LEEWAY = 10 # Last column is right-aligned instead of left-aligned, so some values in this column are printed further left than the header
-# FIXME: There's a possibility that LAST_HEADER_LEEWAY needs to be slightly bigger for reports with six-figure transactions and up
-TITLE_FONT_SIZE_THRESHOLD = 9 # bigger than or equal this = account title
-ANY_FONT_SIZE_THRESHOLD = 3 # smaller than this = illegible text (to be ignored) or bug
-LINE_BREAK_THRESHOLD = 12.01 # smaller than this = line break (not table row break)
-REGEX_DATE = "A?\d{2}\.\d{2}\.\d{4}" # for some reason, in at least one instance, the date said "A29.11.2019"
-REGEX_IBANBIC = "(?P<sender>.+?) (?P<ibanbic>[A-Z]{2}\d{2}[A-Z0-9]+ [A-Z]{6}[A-Z0-9]{5})" # https://stackoverflow.com/questions/21928083/iban-validation-check
-REGEX_REFTEXT = "(?P<manualref>.*?) ?End-to-End-Ref\.:(?P<endref>.*)"
 END_WORD = "(?:[^a-zA-Z]|$)"
 CATEGORY_REGEX = [
     ("Vorgang (orig)", "(?i:wertpapiere)", "Depot", "Kauf / Verkauf"),
@@ -68,6 +57,15 @@ CATEGORY_REGEX = [
 ]
 
 def parse_finanzreport(fp):
+    ACCOUNT_END = "Neuer Saldo" # 2014 reports and older present the phrase as one text chunk
+    ACCOUNT_END_SIGNAL_1 = "Neuer" # newer reports have the two words in separate chunks
+    ACCOUNT_END_SIGNAL_2 = "Saldo"
+    LAST_HEADER_LEEWAY = 10 # Last column is right-aligned instead of left-aligned, so some values in this column are printed further left than the header
+    # FIXME: There's a possibility that LAST_HEADER_LEEWAY needs to be slightly bigger for reports with six-figure transactions and up
+    TITLE_FONT_SIZE_THRESHOLD = 9 # bigger than or equal this = account title
+    ANY_FONT_SIZE_THRESHOLD = 3 # smaller than this = illegible text (to be ignored) or bug
+    LINE_BREAK_THRESHOLD = 12.01 # smaller than this = line break within a table-row; bigger = table-row break
+
     out_of_account_parts = []
     unassignable_parts = []
     cur_font_size_old_pdf_format = 0 # 2014 and older reports contain font size in separate chunks from the text they apply to
@@ -192,6 +190,7 @@ def parse_finanzreport(fp):
         return header_xcoords[column_index]
     
     def is_date(text):
+        REGEX_DATE = "A?\d{2}\.\d{2}\.\d{4}" # for some reason, in at least one instance, the date said "A29.11.2019"
         return re.match(REGEX_DATE, text)
 
     def is_regular_text_line_break(y, cur_row_y):
@@ -237,7 +236,19 @@ def parse_finanzreport(fp):
         print(f"Extracted {len(table.index)} cash flow items in {title} from {fp.name}.")
     return account_tables
 
-def prettify_and_enrich_finanzreport(table, filename, account_title):
+def get_parsing_error(table_per_account: dict[DataFrame], filename: str) -> str:
+        if len(table_per_account) != len(ACCOUNT_TITLES):
+            return f"{abs(len(table_per_account)-len(ACCOUNT_TITLES))} account titles had no matching table. Please check that parse_finanzreport actually parses all expected ACCOUNT_TITLES from file {filename}."
+        if all(table.empty for table in table_per_account.values()):
+            return f"No transactions found in {filename}. Please check if this is an error."
+        if any([not table.empty and len(table.columns) != len(TABLE_HEADERS) for table in table_per_account.values()]):
+            return f"At least one table in {filename} does not have exactly one column per expected header. Please check why."
+        return ""
+
+def prettify_and_enrich_finanzreport(table: DataFrame, filename: str, account_title: str):
+    REGEX_IBANBIC = "(?P<sender>.+?) (?P<ibanbic>[A-Z]{2}\d{2}[A-Z0-9]+ [A-Z]{6}[A-Z0-9]{5})" # https://stackoverflow.com/questions/21928083/iban-validation-check
+    REGEX_REFTEXT = "(?P<manualref>.*?) ?End-to-End-Ref\.:(?P<endref>.*)"
+
     reordered = table.reindex(sorted(table.columns), axis=1)
     
     headers_map = {}
@@ -269,7 +280,7 @@ def prettify_and_enrich_finanzreport(table, filename, account_title):
     
     return renamed
 
-def write_finanzreports(tables, outfile):
+def write_finanzreports(tables: list[DataFrame], outfile: Union["FilePath", "WriteBuffer[bytes]", "WriteBuffer[str]"]):
     print(f"Writing final table from {len(tables)} account tables.")
     table = concat(tables, ignore_index=True)
     table.to_csv(outfile, sep=";", encoding=ENCODING, index=False)
@@ -285,18 +296,13 @@ if __name__ == '__main__':
     collected_tables = []
     for f in wd.glob("**/Finanzreport*.pdf"):
         table_per_account: dict[DataFrame] = parse_finanzreport(f)
-        if len(table_per_account) != len(ACCOUNT_TITLES):
-            print(f"{abs(len(table_per_account)-len(ACCOUNT_TITLES))} account titles had no matching table. Please check why.")
-            continue
-        if all(table.empty for table in table_per_account.values()):
-            print(f"No transations found in {f.name}. Please check if this is an error.")
-            continue
-        if any([not table.empty and len(table.columns) != len(TABLE_HEADERS) for table in table_per_account.values()]):
-            print("At least one table does not have exactly one column per expected header. Please check why.")
+        error_message = get_parsing_error(table_per_account, f.name)
+        if error_message != "":
+            print(error_message)
             continue
         prettified_tables = [
             prettify_and_enrich_finanzreport(table, f.name, account) for account, table in table_per_account.items() if not table.empty
-            ]
+        ]
         [collected_tables.append(table) for table in prettified_tables]
     out_p = args.out if args.out else "girokonto.csv"
     write_finanzreports(collected_tables, out_p)
