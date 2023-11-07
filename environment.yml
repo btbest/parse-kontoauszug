@@ -1,4 +1,4 @@
-name: comdirect-parse
+name: parse-kontoauszug
 channels:
   - conda-forge
 dependencies:
