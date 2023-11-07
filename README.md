@@ -3,19 +3,22 @@ Dieses Python-Skript extrahiert aus comdirect Finanzreport-PDFs die Girokonto-Um
 
 Anhand von Stichwörtern werden die Umsätze simpel kategorisiert. Das smarter zu gestalten ist eine Hoffnung für die Zukunft.
 # Installation
-Das Skript erfordert eine funktionierende Installation von Python 3 mit den Modulen pandas und pypdf. Der einfachste Weg, diese Umgebung herzustellen, ist der Umgebungsmanager [micromamba](https://mamba.readthedocs.io/en/latest/installation.html).
-* Installiere micromamba nach den Anweisungen dort
-* `cd pfad\zu\parse-kontoauszug`
-* `micromamba create -f environment.yml`
+Das Skript erfordert eine funktionierende Installation von Python 3 mit den Modulen pandas und pypdf. Der einfachste Weg, diese Umgebung herzustellen, ist der Umgebungsmanager conda. Conda funktioniert unabhängig von evtl. anderen existierenden Python-Installationen.
+* Dieses Repo runterladen und entpacken (grüner Knopf rechts oben: Code -> Download ZIP)
+* Installiere [conda/miniforge](https://github.com/conda-forge/miniforge#miniforge3) nach den Anweisungen dort
+* Öffne eine miniforge-Kommandozeile
+* `cd pfad/zu/parse-kontoauszug`
+* `conda create -f environment.yml`
 # Ausführung
+## Per mitgeliefertem Skript
+* `run-default.bat` bearbeiten: Die drei Pfade zu python.exe, parsecomdi.py und dem Ordner mit den PDFs durch diejenigen auf dem eigenen System ersetzen.
+** Conda erstellt die Umgebung standardmäßig im Pfad `%HOME%\.conda\envs\parse-comdirect`, wie es im Skript schon steht. Falls das nicht der Fall ist, gibt `conda env list` Auskunft, wo python.exe liegt.  
+* `run-default.bat` ausführen.
 ## Direkt aus der Kommandozeile
 * `micromamba activate comdirect-parse`
 * Falls die Finanzreport PDFs in demselben Ordner liegen wie das Skript, oder in einem Unterordner: `python parsecomdi.py`
 * Falls die Finanzreport PDFs anderswo liegen:  `python parsecomdi.py -p "C:\Pfad\zu\PDFs"`
 * Optional kann man mit -o auch den Namen der Ausgabedatei steuern: `python parsecomdi.py -o "girokonto-2023.csv"`
-## Per mitgeliefertem Skript
-* `run-default.bat` bearbeiten: Die drei Pfade zu python.exe, parsecomdi.py und dem Ordner mit den PDFs durch diejenigen auf dem eigenen System ersetzen
-* `run-default.bat` ausführen.
 # Ergebnis
 Erwartete Ausgabe in der Konsole:
 ![Erwartete Ausgabe in der Konsole](readme/console-out.jpg)
