@@ -12,13 +12,13 @@ Das Skript erfordert eine funktionierende Installation von Python 3 mit den Modu
 # Ausführung
 ## Per mitgeliefertem Skript
 * `run-default.bat` bearbeiten: Die drei Pfade zu python.exe, parsecomdi.py und dem Ordner mit den PDFs durch diejenigen auf dem eigenen System ersetzen.
-  * Conda erstellt die Umgebung standardmäßig im Pfad `%HOME%\.conda\envs\parse-kontoauszug`, wie es im Skript schon steht. Falls das nicht der Fall ist, gibt `conda env list` Auskunft, wo python.exe liegt.  
+  * Conda erstellt die Umgebung standardmäßig im Pfad `%HOME%\.conda\envs\parse-kontoauszug`, wie es im Skript schon steht. Falls das nicht der Fall ist, gibt `conda env list` Auskunft, wo die Umgebung und damit python.exe liegt.  
 * `run-default.bat` ausführen.
 ## Direkt aus der Kommandozeile
 * `conda activate parse-kontoauszug`
-* Falls die Finanzreport PDFs in demselben Ordner liegen wie das Skript, oder in einem Unterordner: `python parsecomdi.py`
-* Falls die Finanzreport PDFs anderswo liegen:  `python parsecomdi.py -p "C:\Pfad\zu\PDFs"`
-* Optional kann man mit -o auch den Namen der Ausgabedatei steuern: `python parsecomdi.py -o "girokonto-2023.csv"`
+* `python parsecomdi.py` falls die Finanzreport PDFs in demselben Ordner liegen wie das Skript, oder in einem Unterordner.
+* `python parsecomdi.py -p "C:\Pfad\zu\PDFs"` falls die Finanzreport PDFs anderswo liegen.
+* `python parsecomdi.py -o "girokonto-2023.csv"` um den Namen der Ausgabedatei zu steuern.
 # Ergebnis
 Erwartete Ausgabe in der Konsole:
 ![Erwartete Ausgabe in der Konsole](readme/console-out.jpg)
