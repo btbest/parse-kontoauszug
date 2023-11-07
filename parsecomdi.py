@@ -42,7 +42,7 @@ CATEGORY_REGEX = [
     ("Buchungsnotiz", "(?i:strom)|(?i:wasser)|(?i:heizung)|(?i:fernwaerme)|(?i:abfall)", "Wohnen", "Nebenkosten"),
     ("Buchungsnotiz", f"(?i:rewe{END_WORD})", "Lebenshaltung", "Lebensmittel"),
     ("Buchungsnotiz", f"(?i:zara{END_WORD})|(?i:primark)", "Lebenshaltung", "Kleidung / Schuhe"),
-    ("Buchungsnotiz", "(?i:uebertrag auf)|(?i:ueberweisung auf v\s?isa-kar\s?te)|(?i:summe wochenabrechnung \s?visa)|(?i:summe monatsabrechnung visa)", "Ausschließen", "Interner Übertrag"),
+    ("Buchungsnotiz", "(?i:uebertrag auf)|(?i:ueberweisung auf v\s?isa-kar\s?te)|(?i:summe wochenabrechnung \s?visa)|(?i:summe monatsabrechnung visa)|(?i:Ueberweisung von Girokonto auf Visa-Karte)", "Ausschließen", "Interner Übertrag"),
     ("Buchungsnotiz", f"(?i:wage{END_WORD})|(?i:salary)|(?i:gehalt)|(?i:lohn)|(?i:bezuege )", "Einkommen", "Gehalt"),
     ("Buchungsnotiz", "(?i:ertraegnisgutschrift)", "Einkommen", "Sparen / Anlegen"),
     ("Buchungsnotiz", "(?i:bargeldeinzahlung)", "Einkommen", "Bargeldeinzahlung"),
@@ -237,13 +237,13 @@ def parse_finanzreport(fp):
     return account_tables
 
 def get_parsing_error(table_per_account: dict[DataFrame], filename: str) -> str:
-        if len(table_per_account) != len(ACCOUNT_TITLES):
-            return f"{abs(len(table_per_account)-len(ACCOUNT_TITLES))} account titles had no matching table. Please check that parse_finanzreport actually parses all expected ACCOUNT_TITLES from file {filename}."
-        if all(table.empty for table in table_per_account.values()):
-            return f"No transactions found in {filename}. Please check if this is an error."
-        if any([not table.empty and len(table.columns) != len(TABLE_HEADERS) for table in table_per_account.values()]):
-            return f"At least one table in {filename} does not have exactly one column per expected header. Please check why."
-        return ""
+    if len(table_per_account) != len(ACCOUNT_TITLES):
+        return f"{abs(len(table_per_account)-len(ACCOUNT_TITLES))} account titles had no matching table. Please check that parse_finanzreport actually parses all expected ACCOUNT_TITLES from file {filename}."
+    if all(table.empty for table in table_per_account.values()):
+        return f"No transactions found in {filename}. Please check if this is an error."
+    if any([not table.empty and len(table.columns) != len(TABLE_HEADERS) for table in table_per_account.values()]):
+        return f"At least one table in {filename} does not have exactly one column per expected header. Please check why."
+    return ""
 
 def prettify_and_enrich_finanzreport(table: DataFrame, filename: str, account_title: str):
     REGEX_IBANBIC = "(?P<sender>.+?) (?P<ibanbic>[A-Z]{2}\d{2}[A-Z0-9]+ [A-Z]{6}[A-Z0-9]{5})" # https://stackoverflow.com/questions/21928083/iban-validation-check
@@ -305,4 +305,7 @@ if __name__ == '__main__':
         ]
         [collected_tables.append(table) for table in prettified_tables]
     out_p = args.out if args.out else "girokonto.csv"
-    write_finanzreports(collected_tables, out_p)
+    if collected_tables:
+        write_finanzreports(collected_tables, out_p)
+    else:
+        print(f"Could not find or parse any Finanzreport at {wd}")
