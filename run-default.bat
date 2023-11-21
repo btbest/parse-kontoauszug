@@ -1,8 +1,8 @@
 @echo off
 chcp 1252 >nul
-SET pythonexe="C:%HOME%\.conda\envs\parse-kontoauszug\python.exe"
-SET scriptpath="C:%HOME%\parse-kontoauszug\parsecomdi.py"
-SET docspath="C:%HOME%\Documents\comdirect-finanzreports"
+SET pythonexe="C:%HOMEPATH%\.conda\envs\parse-kontoauszug\python.exe"
+SET scriptpath="C:%HOMEPATH%\parse-kontoauszug\parsecomdi.py"
+SET docspath="C:%HOMEPATH%\Documents\comdirect-finanzreports"
 SET outname=girokonto.csv
 echo.
 echo Alle Finanzreport-pdfs im Zielordner werden gelesen.

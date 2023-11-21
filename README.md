@@ -8,7 +8,7 @@ Das Skript erfordert eine funktionierende Installation von Python 3 mit den Modu
 * Installiere [conda/miniforge](https://github.com/conda-forge/miniforge#miniforge3) nach den Anweisungen dort
 * Öffne eine miniforge-Kommandozeile
 * `cd pfad/zu/parse-kontoauszug`
-* `conda create -f environment.yml`
+* `conda env create -f environment.yml`
 # Ausführung
 ## Per mitgeliefertem Skript
 * `run-default.bat` bearbeiten: Die drei Pfade zu python.exe, parsecomdi.py und dem Ordner mit den PDFs durch diejenigen auf dem eigenen System ersetzen.

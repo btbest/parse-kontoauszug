@@ -16,44 +16,44 @@ PRINT_HEADERS = ("Buchungstag (orig)", "Vorgang (orig)", "Auftraggeber (orig)", 
 ENCODING = "cp1252"
 END_WORD = "(?:[^a-zA-Z]|$)"
 CATEGORY_REGEX = [
-    ("Vorgang (orig)", "(?i:wertpapiere)", "Depot", "Kauf / Verkauf"),
-    ("Vorgang (orig)", "(?i:Termingeld)", "Depot", "Kauf / Verkauf"),
-    ("Vorgang (orig)", "(?:Bar)", "Einkommen", "Bargeldeinzahlung"),
-    ("Vorgang (orig)", "(?i:auszahlung gaa)|(?i:barauszahlung)", "Sonstige Ausgaben", "Bargeldauszahlung"),
-    ("Auftraggeber-Name", "comdirect Visa", "Ausschließen", "Interner Übertrag"),
-    ("Auftraggeber-Name", "(?i:stadtwerke)|(?i:abfall)", "Wohnen", "Nebenkosten"),
-    ("Auftraggeber-Name", "(?i:kaufland)|(?i:lidl)|(?i:aldi)|(?i:rewe)|(?i:penny)|(?i:edeka)|(?i:tegut)", "Lebenshaltung", "Lebensmittel"),
-    ("Auftraggeber-Name", "(?i:drogeriemarkt)|(?i:rossmann)", "Lebenshaltung", "Drogerie"),
-    ("Auftraggeber-Name", "(?i:deichmann)|(?i:c\+a)", "Lebenshaltung", "Kleidung / Schuhe"),
-    ("Auftraggeber-Name", f"(?i:obi{END_WORD})|(?i:bauhaus{END_WORD})", "Lebenshaltung", "Heim / Garten"),
-    ("Auftraggeber-Name", "(?i:apotheke)", "Lebenshaltung", "Medikamente"),
-    ("Auftraggeber-Name", "(?i:db vertrieb)|(?i:deutsche bahn)|(?i:rnv)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"),
-    ("Auftraggeber-Name", "(?:OIL)", "Verkehrsmittel", "Auto / Tanken"),
-    ("Auftraggeber-Name", "(?i:unitymedia)|(?i:vodafone)|(?i:telefonica)|(?i:drillisch)|(?i:congstar)", "Digital", "Internet / Telefon"),
-    ("Auftraggeber-Name", "(?i:rundfunk)", "Digital", "Rundfunksteuer"),
-    ("Auftraggeber-Name", f"(?i:mcdonalds)|(?i:kfc{END_WORD})|(?i:nordsee gmbh)|(?i:moschmosch)|(?i:gastronomie)|(?i:restaurant)", "Freizeit", "Gastronomie"),
-    ("Auftraggeber-Name", "(?i:cineplex)|(?i:filmpalast)", "Freizeit", "Unterhaltung / Kino / Kultur"),
-    ("Auftraggeber-Name", "(?i:germanwings)", "Reisen", "Flug / Bahn / Bus / Taxi"),
-    ("Auftraggeber-Name", "(?i:bundesagentur für arbeit)", "Einkommen", "Arbeitslosengeld"),
-    ("Buchungsnotiz", "(?i:darlehen)", "Darlehen", "Tilgung"),
-    ("Buchungsnotiz", "(?i:miete)", "Wohnen", "Miete"),
-    ("Buchungsnotiz", "(?i:nebenkostenabrechnung)", "Wohnen", "Miete"),
-    ("Buchungsnotiz", "(?i:hausgeld)", "Wohnen", "Hausgeld"),
-    ("Buchungsnotiz", "(?i:strom)|(?i:wasser)|(?i:heizung)|(?i:fernwaerme)|(?i:abfall)", "Wohnen", "Nebenkosten"),
-    ("Buchungsnotiz", f"(?i:rewe{END_WORD})", "Lebenshaltung", "Lebensmittel"),
-    ("Buchungsnotiz", f"(?i:zara{END_WORD})|(?i:primark)", "Lebenshaltung", "Kleidung / Schuhe"),
-    ("Buchungsnotiz", "(?i:uebertrag auf)|(?i:ueberweisung auf v\s?isa-kar\s?te)|(?i:summe wochenabrechnung \s?visa)|(?i:summe monatsabrechnung visa)|(?i:Ueberweisung von Girokonto auf Visa-Karte)", "Ausschließen", "Interner Übertrag"),
-    ("Buchungsnotiz", f"(?i:wage{END_WORD})|(?i:salary)|(?i:gehalt)|(?i:lohn)|(?i:bezuege )", "Einkommen", "Gehalt"),
-    ("Buchungsnotiz", "(?i:ertraegnisgutschrift)", "Einkommen", "Sparen / Anlegen"),
-    ("Buchungsnotiz", "(?i:bargeldeinzahlung)", "Einkommen", "Bargeldeinzahlung"),
-    ("Buchungsnotiz", "(?i:bargeldauszahlung)", "Sonstige Ausgaben", "Bargeldauszahlung"),
-    ("Buchungsnotiz", "(?i:apotheke)", "Lebenshaltung", "Medikamente"),
-    ("Buchungsnotiz", "(?i:dbvertrieb)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"), # when paying via Paypal
-    ("Buchungsnotiz", "(?i:ryanair)|(?i:wizz air)|(?i:tarom)|(?i:fluegede)", "Reisen", "Flug / Bahn / Bus / Taxi"), # when paying via Paypal
-    ("Buchungsnotiz", "(?i:hotel)", "Reisen", "Hotel / Unterkunft"), # when paying by VISA
-    ("Buchungsnotiz", "(?i:burger king)", "Freizeit", "Gastronomie"),
-    ("Buchungsnotiz", "(?i:theater)|(?i:eventim)|(?i:fkp scorpio)", "Freizeit", "Unterhaltung / Kino / Kultur"), # when paying by VISA
-    ("Buchungsnotiz", "(?i:humblebundl)|(?i:steam\s?games)|(?i:wargaming)", "Freizeit", "Hobbies"), # when paying via Paypal
+    ("Vorgang (orig)", r"(?i:wertpapiere)", "Depot", "Kauf / Verkauf"),
+    ("Vorgang (orig)", r"(?i:Termingeld)", "Depot", "Kauf / Verkauf"),
+    ("Vorgang (orig)", r"(?:Bar)", "Einkommen", "Bargeldeinzahlung"),
+    ("Vorgang (orig)", r"(?i:auszahlung gaa)|(?i:barauszahlung)", "Sonstige Ausgaben", "Bargeldauszahlung"),
+    ("Auftraggeber-Name", r"comdirect Visa", "Ausschließen", "Interner Übertrag"),
+    ("Auftraggeber-Name", r"(?i:stadtwerke)|(?i:abfall)", "Wohnen", "Nebenkosten"),
+    ("Auftraggeber-Name", r"(?i:kaufland)|(?i:lidl)|(?i:aldi)|(?i:rewe)|(?i:penny)|(?i:edeka)|(?i:tegut)", "Lebenshaltung", "Lebensmittel"),
+    ("Auftraggeber-Name", r"(?i:drogeriemarkt)|(?i:rossmann)", "Lebenshaltung", "Drogerie"),
+    ("Auftraggeber-Name", r"(?i:deichmann)|(?i:c\+a)", "Lebenshaltung", "Kleidung / Schuhe"),
+    ("Auftraggeber-Name", rf"(?i:obi{END_WORD})|(?i:bauhaus{END_WORD})", "Lebenshaltung", "Heim / Garten"),
+    ("Auftraggeber-Name", r"(?i:apotheke)", "Lebenshaltung", "Medikamente"),
+    ("Auftraggeber-Name", r"(?i:db vertrieb)|(?i:deutsche bahn)|(?i:rnv)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"),
+    ("Auftraggeber-Name", r"(?:OIL)", "Verkehrsmittel", "Auto / Tanken"),
+    ("Auftraggeber-Name", r"(?i:unitymedia)|(?i:vodafone)|(?i:telefonica)|(?i:drillisch)|(?i:congstar)", "Digital", "Internet / Telefon"),
+    ("Auftraggeber-Name", r"(?i:rundfunk)", "Digital", "Rundfunksteuer"),
+    ("Auftraggeber-Name", rf"(?i:mcdonalds)|(?i:kfc{END_WORD})|(?i:nordsee gmbh)|(?i:moschmosch)|(?i:gastronomie)|(?i:restaurant)", "Freizeit", "Gastronomie"),
+    ("Auftraggeber-Name", r"(?i:cineplex)|(?i:filmpalast)", "Freizeit", "Unterhaltung / Kino / Kultur"),
+    ("Auftraggeber-Name", r"(?i:germanwings)", "Reisen", "Flug / Bahn / Bus / Taxi"),
+    ("Auftraggeber-Name", r"(?i:bundesagentur für arbeit)", "Einkommen", "Arbeitslosengeld"),
+    ("Buchungsnotiz", r"(?i:darlehen)", "Darlehen", "Tilgung"),
+    ("Buchungsnotiz", r"(?i:miete)", "Wohnen", "Miete"),
+    ("Buchungsnotiz", r"(?i:nebenkostenabrechnung)", "Wohnen", "Miete"),
+    ("Buchungsnotiz", r"(?i:hausgeld)", "Wohnen", "Hausgeld"),
+    ("Buchungsnotiz", r"(?i:strom)|(?i:wasser)|(?i:heizung)|(?i:fernwaerme)|(?i:abfall)", "Wohnen", "Nebenkosten"),
+    ("Buchungsnotiz", rf"(?i:rewe{END_WORD})", "Lebenshaltung", "Lebensmittel"),
+    ("Buchungsnotiz", rf"(?i:zara{END_WORD})|(?i:primark)", "Lebenshaltung", "Kleidung / Schuhe"),
+    ("Buchungsnotiz", r"(?i:uebertrag auf)|(?i:ueberweisung auf v\s?isa-kar\s?te)|(?i:summe wochenabrechnung \s?visa)|(?i:summe monatsabrechnung visa)|(?i:Ueberweisung von Girokonto auf Visa-Karte)", "Ausschließen", "Interner Übertrag"),
+    ("Buchungsnotiz", rf"(?i:wage{END_WORD})|(?i:salary)|(?i:gehalt)|(?i:lohn)|(?i:bezuege )", "Einkommen", "Gehalt"),
+    ("Buchungsnotiz", r"(?i:ertraegnisgutschrift)", "Einkommen", "Sparen / Anlegen"),
+    ("Buchungsnotiz", r"(?i:bargeldeinzahlung)", "Einkommen", "Bargeldeinzahlung"),
+    ("Buchungsnotiz", r"(?i:bargeldauszahlung)", "Sonstige Ausgaben", "Bargeldauszahlung"),
+    ("Buchungsnotiz", r"(?i:apotheke)", "Lebenshaltung", "Medikamente"),
+    ("Buchungsnotiz", r"(?i:dbvertrieb)", "Verkehrsmittel", "Öffentliche Verkehrsmittel"), # when paying via Paypal
+    ("Buchungsnotiz", r"(?i:ryanair)|(?i:wizz air)|(?i:tarom)|(?i:fluegede)", "Reisen", "Flug / Bahn / Bus / Taxi"), # when paying via Paypal
+    ("Buchungsnotiz", r"(?i:hotel)", "Reisen", "Hotel / Unterkunft"), # when paying by VISA
+    ("Buchungsnotiz", r"(?i:burger king)", "Freizeit", "Gastronomie"),
+    ("Buchungsnotiz", r"(?i:theater)|(?i:eventim)|(?i:fkp scorpio)", "Freizeit", "Unterhaltung / Kino / Kultur"), # when paying by VISA
+    ("Buchungsnotiz", r"(?i:humblebundl)|(?i:steam\s?games)|(?i:wargaming)", "Freizeit", "Hobbies"), # when paying via Paypal
 ]
 
 def parse_finanzreport(fp):
